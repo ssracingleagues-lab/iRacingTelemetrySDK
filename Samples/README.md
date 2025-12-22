@@ -21,3 +21,12 @@ All of these examples can be used with a running 'live' instance of iRacing, or 
     Simple program to output cars telemetry data for speed, engine rpm and what gear it's in.
     [New] - Use 'p' (pause) and 'r' (resume) keys on the keyboard to pause and resume the telemetry output.
 
+* [BroadcastOverlay](./BroadcastOverlay/)
+
+    Professional broadcast overlay system demonstrating real-time graphics for streaming/broadcasting.
+    Includes:
+    - Backend service with SignalR for real-time data distribution
+    - Standings tower overlay (HTML/JavaScript)
+    - Producer panel for controlling overlays
+    - Complete example of multi-client broadcast architecture
+

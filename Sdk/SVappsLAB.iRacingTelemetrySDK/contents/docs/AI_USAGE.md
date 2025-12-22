@@ -1659,6 +1659,19 @@ var tasks = new[]
 await Task.WhenAll(tasks);
 ```
 
+## Use Cases and Application Patterns
+
+### Broadcast Overlay Systems
+
+For building professional broadcast graphics systems with standings towers, battle boxes, and timing displays controlled by a producer panel, see the comprehensive [Broadcast Overlay Guide](./BROADCAST_OVERLAY_GUIDE.md).
+
+The guide covers:
+- Architecture patterns for multi-client broadcast systems
+- SignalR/WebSocket integration for real-time overlay updates
+- Producer panel implementation for broadcast control
+- Performance optimization for smooth graphics rendering
+- Complete working examples for standings towers and battle boxes
+
 ## License
 
 This SDK is licensed under the Apache License, Version 2.0. See the LICENSE file for details.

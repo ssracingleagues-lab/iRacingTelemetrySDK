@@ -399,11 +399,13 @@ See [Samples Directory](./Samples/README.md) for ready-to-run example projects i
 - IBT file analysis
 - Data export utilities
 - Track analysis tools
+- **Broadcast overlay system** with standings tower and producer panel
 
 ## Documentation
 
 - **[Migration Guide](./MIGRATION_GUIDE.md)** - Upgrading from previous (pre-release) versions
 - **[AI Assistant Instructions](./Sdk/SVappsLAB.iRacingTelemetrySDK/contents/docs/AI_USAGE.md)** - Documentation for AI Assistants
+- **[Broadcast Overlay Guide](./Sdk/SVappsLAB.iRacingTelemetrySDK/contents/docs/BROADCAST_OVERLAY_GUIDE.md)** - Building professional broadcast graphics systems
 
 ## License
 

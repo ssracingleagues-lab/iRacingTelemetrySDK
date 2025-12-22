@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iRacing Broadcast Producer Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00ff00;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .connection-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .connection-status.connected {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .connection-status.disconnected {
+            background: #ff0000;
+            color: #fff;
+        }
+
+        .panel-section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #444;
+        }
+
+        .panel-section h2 {
+            color: #00ff00;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-bottom: 2px solid #444;
+            padding-bottom: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-weight: 500;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            width: 200px;
+            margin: 0 10px;
+            vertical-align: middle;
+        }
+
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #00cc00;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .driver-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #1a1a1a;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .driver-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #2a2a2a;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+
+        .driver-item:hover {
+            background: #333;
+        }
+
+        .driver-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .driver-number {
+            font-weight: bold;
+            color: #00ff00;
+            min-width: 40px;
+        }
+
+        .driver-name {
+            flex: 1;
+        }
+
+        .info-display {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .info-label {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .battle-box-preview {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .battle-car {
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: #333;
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin-left: 10px;
+            font-weight: bold;
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Broadcast Producer Panel</h1>
+        <div class="connection-status" id="connection-status">🔴 Disconnected</div>
+
+        <div class="panel-section">
+            <h2>Session Information</h2>
+            <div class="info-display" id="session-info">
+                <div><span class="info-label">Track:</span> Waiting for data...</div>
+                <div><span class="info-label">Session:</span> --</div>
+                <div><span class="info-label">Drivers:</span> --</div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <h2>Overlay Controls</h2>
+            
+            <div class="control-group">
+                <label>
+                    <input type="checkbox" id="show-standings" checked>
+                    Show Standings Tower
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <input type="checkbox" id="show-battle-box">
+                    Show Battle Box
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Number of positions to show:
+                    <input type="range" id="standings-count" min="5" max="20" value="10">
+                    <span class="value-display" id="standings-count-value">10</span>
+                </label>
+            </div>
+
+            <div class="control-group">
+                <button id="refresh-overlays">🔄 Refresh All Overlays</button>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <h2>Battle Box Setup</h2>
+            <p style="color: #999; margin-bottom: 15px;">
+                Select two cars to feature in the battle box comparison
+            </p>
+
+            <div class="control-group">
+                <label>First Car:</label>
+                <select id="battle-car-1" style="width: 100%; padding: 8px; background: #1a1a1a; color: #fff; border: 1px solid #444; border-radius: 4px;">
+                    <option value="">Select a car...</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Second Car:</label>
+                <select id="battle-car-2" style="width: 100%; padding: 8px; background: #1a1a1a; color: #fff; border: 1px solid #444; border-radius: 4px;">
+                    <option value="">Select a car...</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button id="set-battle-box">⚔️ Set Battle Box Focus</button>
+            </div>
+
+            <div class="battle-box-preview" id="battle-box-preview" style="display: none;">
+                <h3 style="color: #00ff00; margin-bottom: 10px;">Battle Box Preview</h3>
+                <div class="battle-car" id="battle-preview-1">
+                    <div><span class="info-label">Car:</span> --</div>
+                    <div><span class="info-label">Position:</span> --</div>
+                </div>
+                <div style="text-align: center; color: #999; margin: 5px 0;">VS</div>
+                <div class="battle-car" id="battle-preview-2">
+                    <div><span class="info-label">Car:</span> --</div>
+                    <div><span class="info-label">Position:</span> --</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <h2>Available Drivers</h2>
+            <div class="driver-list" id="driver-list">
+                <div style="color: #666; text-align: center; padding: 20px;">
+                    Waiting for driver data...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5000/broadcast")
+            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        let driverCache = new Map();
+        let currentStandings = [];
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.textContent = connected ? '🟢 Connected' : '🔴 Disconnected';
+            statusEl.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
+        }
+
+        // Session update handler
+        connection.on("SessionUpdate", (data) => {
+            console.log("Session update:", data);
+            document.getElementById('session-info').innerHTML = `
+                <div><span class="info-label">Track:</span> ${data.trackName || 'Unknown'} ${data.trackConfig || ''}</div>
+                <div><span class="info-label">Session:</span> ${data.sessionType || 'Unknown'}</div>
+                <div><span class="info-label">Drivers:</span> ${data.driverCount || 0}</div>
+            `;
+        });
+
+        // Drivers update handler
+        connection.on("DriversUpdate", (drivers) => {
+            console.log("Drivers update:", drivers.length, "drivers");
+            
+            // Only update if we actually received new drivers
+            if (drivers && drivers.length > 0) {
+                drivers.forEach(driver => {
+                    driverCache.set(driver.carIdx, driver);
+                });
+
+                updateDriverList();
+                updateBattleBoxSelects();
+            }
+        });
+
+        // Telemetry update handler
+        connection.on("TelemetryUpdate", (data) => {
+            currentStandings = data.standings || [];
+            updateBattleBoxSelects();
+        });
+
+        function updateDriverList() {
+            const listEl = document.getElementById('driver-list');
+            
+            if (driverCache.size === 0) {
+                listEl.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No drivers available</div>';
+                return;
+            }
+
+            const html = Array.from(driverCache.values())
+                .sort((a, b) => (a.carNumber || '').localeCompare(b.carNumber || ''))
+                .map(driver => `
+                    <div class="driver-item">
+                        <span class="driver-number">#${driver.carNumber || driver.carIdx}</span>
+                        <span class="driver-name">${driver.userName || 'Unknown'}</span>
+                        ${driver.teamName ? `<span style="color: #999; font-size: 12px;">${driver.teamName}</span>` : ''}
+                    </div>
+                `).join('');
+
+            listEl.innerHTML = html;
+        }
+
+        function updateBattleBoxSelects() {
+            const select1 = document.getElementById('battle-car-1');
+            const select2 = document.getElementById('battle-car-2');
+            
+            const currentVal1 = select1.value;
+            const currentVal2 = select2.value;
+
+            const options = Array.from(driverCache.values())
+                .map(driver => {
+                    const standing = currentStandings.find(s => s.carIdx === driver.carIdx);
+                    const position = standing ? `P${standing.position}` : '';
+                    return `<option value="${driver.carIdx}">${position} #${driver.carNumber || driver.carIdx} - ${driver.userName || 'Unknown'}</option>`;
+                }).join('');
+
+            select1.innerHTML = '<option value="">Select a car...</option>' + options;
+            select2.innerHTML = '<option value="">Select a car...</option>' + options;
+
+            if (currentVal1) select1.value = currentVal1;
+            if (currentVal2) select2.value = currentVal2;
+        }
+
+        // Control event handlers
+        document.getElementById('show-standings').addEventListener('change', (e) => {
+            connection.invoke("UpdateOverlaySettings", "showStandings", e.target.checked);
+        });
+
+        document.getElementById('show-battle-box').addEventListener('change', (e) => {
+            connection.invoke("UpdateOverlaySettings", "showBattleBox", e.target.checked);
+        });
+
+        document.getElementById('standings-count').addEventListener('input', (e) => {
+            document.getElementById('standings-count-value').textContent = e.target.value;
+            connection.invoke("UpdateOverlaySettings", "standingsCount", parseInt(e.target.value));
+        });
+
+        document.getElementById('refresh-overlays').addEventListener('click', () => {
+            connection.invoke("UpdateOverlaySettings", "refresh", Date.now());
+        });
+
+        document.getElementById('set-battle-box').addEventListener('click', () => {
+            const car1 = parseInt(document.getElementById('battle-car-1').value);
+            const car2 = parseInt(document.getElementById('battle-car-2').value);
+
+            if (!car1 || !car2) {
+                alert('Please select two cars for the battle box');
+                return;
+            }
+
+            if (car1 === car2) {
+                alert('Please select two different cars');
+                return;
+            }
+
+            connection.invoke("SetBattleBoxFocus", car1, car2);
+            
+            // Update preview
+            const preview = document.getElementById('battle-box-preview');
+            preview.style.display = 'block';
+            
+            const driver1 = driverCache.get(car1);
+            const driver2 = driverCache.get(car2);
+            const standing1 = currentStandings.find(s => s.carIdx === car1);
+            const standing2 = currentStandings.find(s => s.carIdx === car2);
+
+            document.getElementById('battle-preview-1').innerHTML = `
+                <div><span class="info-label">Car:</span> #${driver1?.carNumber || car1} ${driver1?.userName || 'Unknown'}</div>
+                <div><span class="info-label">Position:</span> ${standing1?.position || 'N/A'}</div>
+            `;
+
+            document.getElementById('battle-preview-2').innerHTML = `
+                <div><span class="info-label">Car:</span> #${driver2?.carNumber || car2} ${driver2?.userName || 'Unknown'}</div>
+                <div><span class="info-label">Position:</span> ${standing2?.position || 'N/A'}</div>
+            `;
+        });
+
+        // Connection event handlers
+        connection.onreconnected(() => {
+            updateConnectionStatus(true);
+        });
+
+        connection.onclose(() => {
+            updateConnectionStatus(false);
+        });
+
+        // Start connection
+        connection.start()
+            .then(() => {
+                console.log("Producer panel connected");
+                updateConnectionStatus(true);
+            })
+            .catch(err => {
+                console.error("Connection error:", err);
+                updateConnectionStatus(false);
+            });
+    </script>
+</body>
+</html>

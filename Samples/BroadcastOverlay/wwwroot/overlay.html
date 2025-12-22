@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iRacing Broadcast Overlay - Standings Tower</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', 'Arial', sans-serif;
+            background: transparent;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .standings-tower {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(20, 20, 40, 0.85));
+            border-radius: 12px;
+            padding: 15px;
+            min-width: 380px;
+            max-width: 450px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(0, 255, 0, 0.3);
+        }
+        
+        .standings-header {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 10px;
+            border-bottom: 3px solid #00ff00;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.1), transparent);
+        }
+        
+        .session-info {
+            font-size: 11px;
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+
+        .driver-row {
+            display: grid;
+            grid-template-columns: 45px 55px 1fr 90px;
+            gap: 10px;
+            padding: 8px 10px;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 2px;
+            border-radius: 6px;
+        }
+        
+        .driver-row:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-3px);
+        }
+
+        .driver-row.leader {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(0, 0, 0, 0.3));
+            border-left: 4px solid #FFD700;
+        }
+
+        .driver-row.pit {
+            background: rgba(255, 152, 0, 0.2);
+            border-left: 4px solid #ff9800;
+        }
+        
+        .position {
+            font-size: 22px;
+            font-weight: bold;
+            color: #00ff00;
+            text-align: center;
+            text-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+        }
+
+        .position.p1 {
+            color: #FFD700;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+        }
+
+        .position.p2 {
+            color: #C0C0C0;
+        }
+
+        .position.p3 {
+            color: #CD7F32;
+        }
+        
+        .car-number {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .driver-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .driver-name {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .driver-team {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .pit-indicator {
+            color: #ff9800;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 8px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .timing-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .gap {
+            font-size: 13px;
+            color: #00ff00;
+            font-weight: 500;
+        }
+
+        .gap.leader {
+            color: #FFD700;
+        }
+        
+        .last-lap {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .last-lap.best {
+            color: #e040fb;
+            font-weight: bold;
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 6px;
+            font-size: 12px;
+            border: 1px solid;
+        }
+
+        .connection-status.connected {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+
+        .connection-status.disconnected {
+            border-color: #ff0000;
+            color: #ff0000;
+            animation: pulse 1s infinite;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connection-status">
+        🔴 Connecting...
+    </div>
+
+    <div class="standings-tower">
+        <div class="standings-header">LIVE STANDINGS</div>
+        <div class="session-info" id="session-info">Waiting for session data...</div>
+        <div id="standings-container">
+            <div class="no-data">Waiting for telemetry data...</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5000/broadcast")
+            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        let driverCache = new Map();
+        let sessionData = null;
+
+        // Connection status handling
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connection-status');
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                statusEl.textContent = '🟢 Connected';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusEl.textContent = '🔴 Disconnected';
+            }
+        }
+
+        connection.onreconnecting(() => {
+            console.log("Reconnecting...");
+            updateConnectionStatus(false);
+        });
+
+        connection.onreconnected(() => {
+            console.log("Reconnected");
+            updateConnectionStatus(true);
+            connection.invoke("RequestFullUpdate");
+        });
+
+        connection.onclose(() => {
+            console.log("Connection closed");
+            updateConnectionStatus(false);
+        });
+
+        // Session update handler
+        connection.on("SessionUpdate", (data) => {
+            console.log("Session update received", data);
+            sessionData = data;
+            
+            const infoEl = document.getElementById('session-info');
+            infoEl.textContent = `${data.trackName || 'Unknown Track'} | ${data.sessionType || 'Unknown'} | ${data.driverCount || 0} drivers`;
+        });
+
+        // Drivers update handler
+        connection.on("DriversUpdate", (drivers) => {
+            console.log("Drivers update received", drivers.length, "drivers");
+            
+            drivers.forEach(driver => {
+                driverCache.set(driver.carIdx, driver);
+            });
+        });
+
+        // Telemetry update handler
+        connection.on("TelemetryUpdate", (data) => {
+            updateStandings(data);
+        });
+
+        function updateStandings(data) {
+            const container = document.getElementById('standings-container');
+            
+            if (!data.standings || data.standings.length === 0) {
+                container.innerHTML = '<div class="no-data">No active cars in session</div>';
+                return;
+            }
+
+            const html = data.standings.map(entry => {
+                const driver = driverCache.get(entry.carIdx);
+                if (!driver) return '';
+
+                const positionClass = entry.position === 1 ? 'p1' : 
+                                    entry.position === 2 ? 'p2' : 
+                                    entry.position === 3 ? 'p3' : '';
+
+                const rowClasses = ['driver-row'];
+                if (entry.position === 1) rowClasses.push('leader');
+                if (entry.onPitRoad) rowClasses.push('pit');
+
+                const gapText = entry.position === 1 ? 'LEADER' : 
+                               entry.gapToLeader != null ? `+${entry.gapToLeader.toFixed(3)}` : 
+                               'N/A';
+                const gapClass = entry.position === 1 ? 'gap leader' : 'gap';
+
+                const lastLapText = entry.lastLapTime && entry.lastLapTime > 0 ? 
+                                   formatLapTime(entry.lastLapTime) : '--:--.---';
+                
+                const isBestLap = entry.lastLapTime && entry.bestLapTime && 
+                                 Math.abs(entry.lastLapTime - entry.bestLapTime) < 0.001;
+                const lastLapClass = isBestLap ? 'last-lap best' : 'last-lap';
+
+                return `
+                    <div class="${rowClasses.join(' ')}">
+                        <div class="position ${positionClass}">${entry.position}</div>
+                        <div class="car-number">${driver.carNumber || entry.carIdx}</div>
+                        <div class="driver-info">
+                            <div class="driver-name">
+                                ${driver.userName || 'Unknown'}
+                                ${entry.onPitRoad ? '<span class="pit-indicator">PIT</span>' : ''}
+                            </div>
+                            ${driver.teamName ? `<div class="driver-team">${driver.teamName}</div>` : ''}
+                        </div>
+                        <div class="timing-info">
+                            <div class="${gapClass}">${gapText}</div>
+                            <div class="${lastLapClass}">${lastLapText}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        function formatLapTime(seconds) {
+            if (!seconds || seconds <= 0) return '--:--.---';
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(3);
+            return `${mins}:${secs.padStart(6, '0')}`;
+        }
+
+        // Start the connection
+        connection.start()
+            .then(() => {
+                console.log("Connected to broadcast hub");
+                updateConnectionStatus(true);
+                connection.invoke("SubscribeToStandings");
+            })
+            .catch(err => {
+                console.error("Connection error:", err);
+                updateConnectionStatus(false);
+            });
+    </script>
+</body>
+</html>
