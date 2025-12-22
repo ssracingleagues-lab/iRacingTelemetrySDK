@@ -313,12 +313,15 @@
         connection.on("DriversUpdate", (drivers) => {
             console.log("Drivers update:", drivers.length, "drivers");
             
-            drivers.forEach(driver => {
-                driverCache.set(driver.carIdx, driver);
-            });
+            // Only update if we actually received new drivers
+            if (drivers && drivers.length > 0) {
+                drivers.forEach(driver => {
+                    driverCache.set(driver.carIdx, driver);
+                });
 
-            updateDriverList();
-            updateBattleBoxSelects();
+                updateDriverList();
+                updateBattleBoxSelects();
+            }
         });
 
         // Telemetry update handler
