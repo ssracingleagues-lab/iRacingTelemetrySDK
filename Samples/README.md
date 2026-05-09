@@ -20,4 +20,7 @@ All of these examples can be used with a running 'live' instance of iRacing, or 
 
     Simple program to output cars telemetry data for speed, engine rpm and what gear it's in.
     [New] - Use 'p' (pause) and 'r' (resume) keys on the keyboard to pause and resume the telemetry output.
+* [ScoringTower](./ScoringTower/)
+
+    Renders a NASCAR-style live scoring tower in the terminal, using session driver info plus per-car position, lap, and gap telemetry. Pass an IBT file path for playback or run with no file for live iRacing telemetry.
 
